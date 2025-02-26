@@ -1,0 +1,9 @@
+data_loader/
+venv*/
+*.pt
+*.pth
+*.mp4
+*.mov
+*.png
+*.jpg
+*.jpeg
