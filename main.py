@@ -1,14 +1,4 @@
-import argparse
-from typing import List
-
-import cv2
-import numpy as np
-from inference import InferencePipeline
-from inference.core.interfaces.camera.entities import VideoFrame
-from utils.general import find_in_list, load_zones_config
-from utils.timers import ClockBasedTimer
-
-import supervision as sv
+from data_loader.importer import *
 
 def fps_monitor_call(self) -> float:
     return self.fps
