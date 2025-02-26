@@ -1,4 +1,4 @@
-from functions.log_manager import LogManager
+from utils.log_manager import LogManager
 import sqlalchemy
 from sqlalchemy import create_engine
 import pyodbc
@@ -46,28 +46,7 @@ class SqlUtilities:
         engine = sqlalchemy.create_engine(connection_url)
         connection = engine.connect()
         return conn
-    
-    @log_manager.log_errors(sector = 'Utilidades SQL')
-    def get_database_com(query: str):
-        file_path = "data_loader/datos_com.json"
-        conn = SqlUtilities.connect_sql(file_path)
-        bd = pd.read_sql(sql=query, con=conn)
-        return bd
-    
-    @log_manager.log_errors(sector = 'Utilidades SQL')
-    def get_database_cal(query: str):
-        file_path = "data_loader/datos_calendar.json"
-        conn = SqlUtilities.connect_sql(file_path)
-        bd = pd.read_sql(sql=query, con=conn)
-        return bd
-
-    @log_manager.log_errors(sector = 'Utilidades SQL')
-    def get_database_sf(query: str):
-        file_path = "data_loader/datos_sf.json"
-        conn = SqlUtilities.connect_sql(file_path)
-        bd = pd.read_sql(sql=query, con=conn)
-        return bd
-    
+        
     @log_manager.log_errors(sector = 'Utilidades SQL')
     def insert_database_sf(query: str):
         file_path = "data_loader/datos_sf_adm.json"
