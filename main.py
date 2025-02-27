@@ -26,6 +26,10 @@ class CustomSink:
             )
             for polygon in self.polygons
         ]
+        # Diccionario para detecciones activas: por cada zona se registra el tracker_id y su hora de entrada
+        self.active_detections = {idx: {} for idx in range(len(self.zones))}
+        # (Opcional) Backup local de eventos
+        self.logged_events = []
 
     def on_prediction(self, result: dict, frame: VideoFrame) -> None:
         self.fps_monitor.tick()
@@ -44,6 +48,8 @@ class CustomSink:
             text_color=sv.Color.from_hex("#000000"),
         )
 
+        current_time = time.time()
+
         for idx, zone in enumerate(self.zones):
             annotated_frame = sv.draw_polygon(
                 scene=annotated_frame, polygon=zone.polygon, color=COLORS.by_idx(idx)
@@ -59,8 +65,8 @@ class CustomSink:
                 custom_color_lookup=custom_color_lookup,
             )
             labels = [
-                f"#{tracker_id} {int(time // 60):02d}:{int(time % 60):02d}"
-                for tracker_id, time in zip(detections_in_zone.tracker_id, time_in_zone)
+                f"#{tracker_id} {int(time_val // 60):02d}:{int(time_val % 60):02d}"
+                for tracker_id, time_val in zip(detections_in_zone.tracker_id, time_in_zone)
             ]
             annotated_frame = LABEL_ANNOTATOR.annotate(
                 scene=annotated_frame,
@@ -68,6 +74,45 @@ class CustomSink:
                 labels=labels,
                 custom_color_lookup=custom_color_lookup,
             )
+
+            # Obtener tracker_ids actuales en la zona
+            current_ids = set(detections_in_zone.tracker_id)
+            # Tracker_ids previamente activos en la zona
+            active_ids = set(self.active_detections[idx].keys())
+
+            # Registrar nuevos ingresos
+            for tracker_id in current_ids - active_ids:
+                self.active_detections[idx][tracker_id] = current_time
+
+            # Detectar salidas: objetos que estaban activos y que ya no se detectan en esta zona
+            for tracker_id in active_ids - current_ids:
+                if tracker_id in self.active_detections[idx]:
+
+                    entry_time = self.active_detections[idx].pop(tracker_id)
+                    dwell_time = current_time - entry_time
+
+                    # Convertir los timestamps a objetos datetime
+                    hora_entrada = datetime.datetime.fromtimestamp(entry_time)
+                    hora_salida = datetime.datetime.fromtimestamp(current_time)
+
+                    # Crear el diccionario para MongoDB
+                    evento = {
+                        "zona_id": int(idx),
+                        "id_rastreador": int(tracker_id),
+                        "hora_entrada": hora_entrada,
+                        "hora_salida": hora_salida,
+                        "tiempo_permanencia": dwell_time
+                    }
+
+                    self_mongo = MongoConnector()
+                    coleccion_supervision = self_mongo.db["Supervision"]
+                    MongoConnector.insert_single_document(self_mongo, evento, coleccion_supervision)
+                    self.logged_events.append(evento)
+                else:
+                    # Opcional: registrar un log si el tracker_id no tiene entry_time
+                    print(f"Advertencia: No se encontró 'entry_time' para tracker_id {tracker_id} en zona {idx}")
+
+
         cv2.imshow("Processed Video", annotated_frame)
         cv2.waitKey(1)
 
