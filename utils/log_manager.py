@@ -1,4 +1,4 @@
-from functions.mongo_connector import MongoConnector
+from utils.mongo_connector import MongoConnector
 import logging  # Modulo estandar para registrar eventos en un archivo o consola.
 from datetime import datetime  # Capturar marcas de tiempo en los errores.
 from functools import wraps  # Funciones decoradas
