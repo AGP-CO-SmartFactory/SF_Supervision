@@ -29,29 +29,28 @@ class GestorProductividad:
         #Eliminar la columna _id si existe en el DataFrame
         if self.df is not None and '_id' in self.df.columns:
             self.df = self.df.drop(columns=['_id'])
-        print(self.df.head())
 
     def reporte_por_intervalo(self):
         """
         Genera el reporte de eficiencia para el intervalo que inicia en 'hora_inicio'
         y termina una hora después.
         """
-        hora_inicio = datetime(2025, 2, 27, 13, 0, 0)
-        # Asegurarse de que las columnas de fecha sean datetime
+        hora_inicio = datetime(2025, 2, 28, 11, 0, 0) #PARA PRUEBAS DE ESCRITORIO ! 
+        #Asegurarse de que las columnas de fecha sean datetime
         self.df['hora_entrada'] = pd.to_datetime(self.df['hora_entrada'])
         self.df['hora_salida'] = pd.to_datetime(self.df['hora_salida'])
         
         hora_fin = hora_inicio + timedelta(hours=1)
         registros = []
         
-        # Para cada evento, calcular el solapamiento con el intervalo [hora_inicio, hora_fin)
+        #Para cada evento, calcular el solapamiento con el intervalo [hora_inicio, hora_fin)
         for _, row in self.df.iterrows():
             overlap_start = max(row['hora_entrada'], hora_inicio)
             overlap_end = min(row['hora_salida'], hora_fin)
             overlap = (overlap_end - overlap_start).total_seconds()
             if overlap > 0:
                 registros.append({
-                    'hora': hora_inicio,  # Representa el inicio del intervalo
+                    'hora': hora_inicio,  #Representa el inicio del intervalo
                     'puesto_trabajo': row['zona_id'],
                     'tiempo_en_puesto': overlap
                 })
@@ -61,9 +60,9 @@ class GestorProductividad:
             print("No se encontraron eventos en el intervalo.")
             return df_overlap
         
-        # Agrupar por la hora (intervalo) y zona
+        #Agrupar por la hora (intervalo) y zona
         reporte = df_overlap.groupby(['hora', 'puesto_trabajo'], as_index=False).agg({'tiempo_en_puesto': 'sum'})
-        # Calcular la eficiencia: porcentaje de la hora (3600 segundos) ocupado
+        #Calcular la eficiencia: porcentaje de la hora (3600 segundos) ocupado
         reporte['eficiencia'] = reporte['tiempo_en_puesto'] / 3600 * 100
         return reporte
 
